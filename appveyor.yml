@@ -1,0 +1,49 @@
+environment:
+  matrix:
+  - julia_version: 1
+
+platform:
+  - x64 # 64-bit
+
+branches:
+  only:
+    - /release-.*/
+
+notifications:
+  - provider: Email
+    on_build_success: false
+    on_build_failure: false
+    on_build_status_changed: false
+
+install:
+  - ps: "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12"
+  - ps: iex ((new-object net.webclient).DownloadString("https://raw.githubusercontent.com/JuliaCI/Appveyor.jl/version-1/bin/install.ps1"))
+  - ps: (new-object net.webclient).DownloadFile(
+        "https://dev.mysql.com/get/Downloads/MySQLInstaller/mysql-installer-community-8.0.15.0.msi",
+        "C:\projects\mysql.msi")
+# Run installer silently, output to C:\projects\julia
+  - msiexec /a C:\projects\mysql.msi /b TARGETDIR=C:\projects\mysql
+  - dir C:\projects\mysql
+  - mkdir products32\bin
+  - mkdir products64\bin
+  - copy "C:\projects\mysql\MariaDB\MariaDB Connector C\lib\libmysql.dll" products32\bin\ & exit 0
+  - copy "C:\projects\mysql\MariaDB\MariaDB Connector C 64-bit\lib\libmysql.dll" products64\bin\ & exit 0
+
+build_script:
+# Need to convert from shallow to complete for Pkg.clone to work
+  - IF EXIST .git\shallow (git fetch --unshallow)
+  - C:\julia\bin\julia -e 'using Pkg; pkg"add BinaryProvider"; pkg"add BinaryBuilder#master"; Pkg.build()'
+  - C:\julia\bin\julia build_windows_tarballs.jl
+
+artifacts:
+  - path: '*.tar.gz'
+  
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: 8lfUNWIA6kc0pw+Y6HGIyYPngE6/TcFC/FwoDZoZe9nTjApl6wlVIVYF45hqONF4
+  artifact: /.*\.tar.gz/
+  force_update: true
+  on:
+    branch: master
+    appveyor_repo_tag: true

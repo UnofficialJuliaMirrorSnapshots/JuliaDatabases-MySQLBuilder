@@ -1,0 +1,39 @@
+language: julia
+os:
+  - linux
+julia:
+  - 1.1
+notifications:
+  email: false
+git:
+  depth: 99999999
+cache:
+  timeout: 1000
+  directories:
+    - downloads
+env:
+  global:
+    - BINARYBUILDER_DOWNLOADS_CACHE=downloads
+    - BINARYBUILDER_AUTOMATIC_APPLE=true
+sudo: required
+
+# Before anything else, get the latest versions of things
+before_script:
+  - julia -e 'using Pkg; pkg"add BinaryProvider"; pkg"add BinaryBuilder#master"; Pkg.build()'
+
+script:
+  - julia build_tarballs.jl
+  
+deploy:
+    provider: releases
+    api_key:
+        # Note; this api_key is only valid for JuliaDatabases/MySQLBuilder; you need
+        # to make your own: https://docs.travis-ci.com/user/deployment/releases/
+        secure: m2XbFyGup2yijRgvjy2pZuglwagclHMUFnQwb3I9VDAVxsv5NVz0D8LVD5bzxBqyr4NoL6JEKLe7Z+9xyNBQHQoE8wO/sjdIohkzehm01i1TWK7st6VQKSWTKRjVHBLChZRj7mn9oQBW/fhb0q1F9igCApFHpHZdFgSEXCRDFR+Chrylj66U0939hkGRxDfBwcNrfHk+hgjXgg7oOh6QQ4lzat9UOhO6mMZuEUswcj1dldJXTfdBDpMctI0P6zq+fflklXBwadzgr3KC5xuvBTToialryqKcO3+hLbxGQmNPwjmcbq+aPQfIOj3wIPfsoWEmLMXy4ygFuf8uWmiYCTjS/0bDTZPmctRPaVlh/P1NtR7gvUZUJNAG2TD3wes0H3LvZbUaYiSZavSIwdzxFWoPQuUE6ekiaplXjPSw3S00sfzMLof2i9AnjQxsZUJZisdIC/7x9ytLcJPmNhfgG/e2Q6luqzkJ4lP0z5d9BIGdr0n8yiuR90JXUffl2g14Tr5JXiSZh1gjxPeSxvfTWiCps0tE4+91l0eDQ3kY8ddhQFPUO8JWVUwZYxA3ZRE5MUmmjDs3NDufveCSv0Xz7j09gqkdzl1VsFFzNLRa2QcgL9vqfpD3L7PVpdNx5gGYsB/AKPxTgNFuGzFfihvx66a1dKQ0p+souaqhlWDndXU=
+
+    file_glob: true
+    file: products/*
+    skip_cleanup: true
+    on:
+        repo: JuliaDatabases/MySQLBuilder
+        tags: true
